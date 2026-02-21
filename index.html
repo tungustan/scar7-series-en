@@ -49,6 +49,7 @@
             // 자동재생을 위해 muted=true 유지
             playerIframe.src = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.id}?autoplay=true&muted=true`;
 
+
             const player = new playerjs.Player(playerIframe);
             player.on('ready', () => {
                 player.on('ended', () => {
