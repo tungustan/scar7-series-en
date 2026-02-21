@@ -1,21 +1,30 @@
 import pygame
+import os
 import time
 
-def play_music(file_path):
-    # 믹서 초기화
-    pygame.mixer.init()
+def play_music():
+    # 1. 파일이 실제로 있는지 확인 (가장 중요!)
+    # 아래 'test.mp3'를 본인이 가진 파일 이름으로 정확히 바꾸세요.
+    filename = "test.mp3" 
     
-    # 음악 로드
-    pygame.mixer.music.load(file_path)
-    
-    # 재생 시작
-    print(f"재생 중: {file_path}")
-    pygame.mixer.music.play()
+    if not os.path.exists(filename):
+        print(f"❌ 에러: '{filename}' 파일을 찾을 수 없습니다.")
+        print(f"현재 폴더 위치: {os.getcwd()}")
+        print("음악 파일을 이 폴더 안으로 옮기거나 이름을 확인해 주세요.")
+        return
 
-    # 음악이 재생되는 동안 프로그램이 종료되지 않게 대기
-    while pygame.mixer.music.get_busy():
-        time.sleep(1)
+    try:
+        pygame.mixer.init()
+        pygame.mixer.music.load(filename)
+        pygame.mixer.music.play()
+        print(f"🎵 '{filename}' 재생 중...")
 
-# 실행 (본인의 파일명으로 수정하세요)
+        while pygame.mixer.music.get_busy():
+            time.sleep(1)
+            
+    except pygame.error as e:
+        print(f"❌ Pygame 에러 발생: {e}")
+        print("Tip: MP3 포맷 문제일 수 있으니 .wav 파일로도 테스트해 보세요.")
+
 if __name__ == "__main__":
-    play_music("your_audio_file.mp3") 
+    play_music()
