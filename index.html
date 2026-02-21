@@ -1,30 +1,103 @@
-import pygame
-import os
-import time
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bunny Stream Player</title>
+    <!-- 재생 종료 감지를 위한 Player.js -->
+    <script src="https://assets.mediadelivery.net"></script>
+    <style>
+        body { background: #000; color: #fff; margin: 0; padding: 0; font-family: -apple-system, sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* 암호 입력 화면 */
+        #login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:100; }
+        input { padding: 15px; font-size: 18px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; width: 220px; text-align: center; background: #222; color: #fff; outline: none; }
+        button { padding: 15px 40px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
 
-def play_music():
-    # 1. 파일이 실제로 있는지 확인 (가장 중요!)
-    # 아래 'test.mp3'를 본인이 가진 파일 이름으로 정확히 바꾸세요.
-    filename = "test.mp3" 
-    
-    if not os.path.exists(filename):
-        print(f"❌ 에러: '{filename}' 파일을 찾을 수 없습니다.")
-        print(f"현재 폴더 위치: {os.getcwd()}")
-        print("음악 파일을 이 폴더 안으로 옮기거나 이름을 확인해 주세요.")
-        return
+        /* 세로형 9:16 비율 레이아웃 */
+        #content { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; background: #000; }
+        .player-container { position: relative; width: 100%; padding-top: 177.77%; /* 9:16 비율 */ }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        
+        #info-bar { padding: 15px; background: rgba(0,0,0,0.8); font-size: 13px; text-align: center; color: #888; position: absolute; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
 
-    try:
-        pygame.mixer.init()
-        pygame.mixer.music.load(filename)
-        pygame.mixer.music.play()
-        print(f"🎵 '{filename}' 재생 중...")
+    <div id="login-overlay">
+        <h2 style="margin-bottom:20px;">🔒 PASSWORD REQUIRED</h2>
+        <input type="password" id="pw-input" placeholder="Enter 12345" autofocus>
+        <button onclick="checkPassword()">ENTER</button>
+    </div>
 
-        while pygame.mixer.music.get_busy():
-            time.sleep(1)
-            
-    except pygame.error as e:
-        print(f"❌ Pygame 에러 발생: {e}")
-        print("Tip: MP3 포맷 문제일 수 있으니 .wav 파일로도 테스트해 보세요.")
+    <div id="content">
+        <div class="player-container">
+            <iframe id="bunny-player" src="" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <div id="info-bar">목록 로드 중...</div>
+    </div>
 
-if __name__ == "__main__":
-    play_music()
+    <script>
+        // 제공해주신 정보 적용
+        const LIBRARY_ID = '603825';
+        const API_KEY = '8b148e03-db31-41c1-89fa29184619-0d59-4439'; // 마지막 하이픈 뒤 오타 수정 반영
+
+        let videoList = [];
+        let currentIndex = 0;
+        const iframe = document.getElementById('bunny-player');
+        const infoBar = document.getElementById('info-bar');
+
+        function checkPassword() {
+            if (document.getElementById('pw-input').value === "12345") {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('content').style.display = 'flex';
+                fetchVideos();
+            } else {
+                alert("비밀번호가 틀렸습니다.");
+            }
+        }
+
+        async function fetchVideos() {
+            try {
+                const response = await fetch(`https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100&orderBy=title`, {
+                    headers: { 'AccessKey': API_KEY, 'accept': 'application/json' }
+                });
+                const data = await response.json();
+                
+                // 이름(title) 순으로 정렬
+                videoList = data.items.sort((a, b) => a.title.localeCompare(b.title, undefined, {numeric: true}));
+                
+                if (videoList.length > 0) {
+                    playVideo(0);
+                } else {
+                    infoBar.innerText = "재생할 영상이 없습니다.";
+                }
+            } catch (err) {
+                infoBar.innerText = "연결 실패 (API 키나 네트워크를 확인하세요)";
+            }
+        }
+
+        function playVideo(index) {
+            if (index >= videoList.length) {
+                infoBar.innerText = "✅ 모든 에피소드 재생 완료";
+                return;
+            }
+
+            currentIndex = index;
+            const video = videoList[index];
+            // 모바일 인라인 재생 및 자동재생 설정
+            iframe.src = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.guid}?autoplay=true&playsinline=true`;
+            infoBar.innerText = `NOW PLAYING [${index + 1}/${videoList.length}] : ${video.title}`;
+
+            // Player.js로 영상 종료 감지 -> 다음 영상 호출
+            const player = new playerjs.Player(iframe);
+            player.on('ready', () => {
+                player.on('ended', () => playVideo(currentIndex + 1));
+            });
+        }
+
+        // 엔터키 지원
+        document.getElementById('pw-input').onkeypress = (e) => { if(e.key === 'Enter') checkPassword(); };
+    </script>
+</body>
+</html>
