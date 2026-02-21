@@ -2,63 +2,62 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>비공개 플레이어</title>
+    <title>Bunny Player</title>
     <script src="https://assets.mediadelivery.net"></script>
     <style>
-        body { background-color: #000; color: #fff; text-align: center; font-family: sans-serif; margin: 0; padding: 20px; }
-        .player-container { position: relative; padding-top: 56.25%; width: 100%; max-width: 900px; margin: 20px auto; border: 1px solid #444; }
+        body { background-color: black; color: white; text-align: center; padding: 20px; }
+        .container { position: relative; padding-top: 56.25%; width: 100%; max-width: 800px; margin: auto; }
         iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
     </style>
 </head>
 <body>
-    <script>
-        var pw = prompt("비밀번호를 입력하세요:");
-        if (pw !== "12345") { alert("접근 불가"); window.location.href = "about:blank"; }
-    </script>
-
-    <h2 id="video-title">준비 중...</h2>
-    <div class="player-container">
-        <iframe id="bunny-player" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
+    <h2 id="status">비디오 로딩 중...</h2>
+    <div class="container">
+        <iframe id="video-iframe" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
 
     <script>
-        const LIBRARY_ID = '603825'; 
-
-        // [여기를 수정하세요!] 제목과 ID를 직접 적어주세요.
-        // ID는 Bunny.net 대시보드 영상 상세페이지의 'Video ID'입니다.
+        // [1] 여기에 영상 제목과 ID만 정확히 넣어주세요.
         const myVideos = [
-            { title: "EP01_ensub", id: "17b2f4f3-96ff-40e7-9462-2eaed6bab2c2" },
-            { title: "EP02_ensub", id: "fd9b1c33-d2e4-4c99-b68e-082c88d423bf" },
-            { title: "EP03_ensub", id: "200ca492-a946-49b5-9adb-d8e4a200146d" }
+            { title: "Ep01", id: "17b2f4f3-96ff-40e7-9462-2eaed6bab2c2" },
+            { title: "Ep02", id: "fd9b1c33-d2e4-4c99-b68e-082c88d423bf" },
+            { title: "Ep03", id: "200ca492-a946-49b5-9adb-d8e4a200146d" }
         ];
 
-        // 영어 이름순(A-Z) 자동 정렬
-        const videoPlaylist = myVideos.sort((a, b) => a.title.localeCompare(b.title, 'en'));
-        
+        // [2] 알파벳순 정렬
+        myVideos.sort((a, b) => a.title.localeCompare(b.title, 'en'));
+
         let currentIdx = 0;
-        const playerIframe = document.getElementById('bunny-player');
-        const titleEl = document.getElementById('video-title');
+        const iframe = document.getElementById('video-iframe');
+        const status = document.getElementById('status');
 
         function playVideo(index) {
-            if (index >= videoPlaylist.length) {
-                titleEl.innerText = "모든 영상 재생 완료 ✨";
+            if (index >= myVideos.length) {
+                status.innerText = "모든 재생 완료";
                 return;
             }
-            const video = videoPlaylist[index];
-            titleEl.innerText = `재생 중 (${index + 1}/${videoPlaylist.length}): ${video.title}`;
-            // 자동재생을 위해 muted=true 유지
-            playerIframe.src = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.id}?autoplay=true&muted=true`;
 
+            const video = myVideos[index];
+            status.innerText = "현재 재생: " + video.title;
 
-            const player = new playerjs.Player(playerIframe);
-            player.on('ready', () => {
-                player.on('ended', () => {
+            // [3] 주소 형식을 강제로 고정했습니다 (ID: 603825)
+            const videoUrl = "https://iframe.mediadelivery.net" + video.id + "?autoplay=true&muted=true";
+            iframe.src = videoUrl;
+
+            // [4] 다음 영상 재생 체크
+            const player = new playerjs.Player(iframe);
+            player.on('ready', function() {
+                player.on('ended', function() {
                     currentIdx++;
                     playVideo(currentIdx);
                 });
             });
         }
-        if (videoPlaylist.length > 0) playVideo(0);
+
+        // 시작
+        if (myVideos.length > 0) {
+            playVideo(0);
+        }
     </script>
 </body>
 </html>
