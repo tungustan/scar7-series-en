@@ -11,13 +11,12 @@
     </style>
 </head>
 <body>
-    <h2 id="status">로딩 중...</h2>
+    <h2 id="status">연결 시도 중...</h2>
     <div class="container">
         <iframe id="video-iframe" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
 
     <script>
-        // 비디오 리스트 (정확한 ID 확인 완료)
         const myVideos = [
             { title: "EP01", id: "17b2f4f3-96ff-40e7-9462-2eaed6bab2c2" },
             { title: "EP02", id: "fd9b1c33-d2e4-4c99-b68e-082c88d423bf" },
@@ -37,17 +36,14 @@
             const video = myVideos[index];
             status.innerText = "현재 재생: " + video.title;
 
-            // 주소 형식을 수동으로 완벽하게 고정 (ID: 603825)
-            // .net 뒤에 /embed/ 가 반드시 있어야 합니다.
-            const finalUrl = "https://iframe.mediadelivery.net" + video.id + "?autoplay=true&muted=true";
-            
-            console.log("접속 주소:", finalUrl); // 브라우저 검사창에서 확인 가능
-            iframe.src = finalUrl;
+            // 주소를 변수 없이 통째로 연결합니다. (603825 라이브러리)
+            // 반드시 .net 뒤에 /embed/603825/ 가 있어야 합니다.
+            iframe.src = "https://iframe.mediadelivery.net" + video.id + "?autoplay=true&muted=true";
 
-            // 영상 종료 감지 (Player.js)
-            const checkPlayer = setInterval(function() {
+            // Player.js 연결
+            const timer = setInterval(function() {
                 if (typeof playerjs !== 'undefined') {
-                    clearInterval(checkPlayer);
+                    clearInterval(timer);
                     const player = new playerjs.Player(iframe);
                     player.on('ready', function() {
                         player.on('ended', function() {
@@ -59,7 +55,6 @@
             }, 500);
         }
 
-        // 페이지 로드 시 시작
         window.onload = function() {
             playVideo(0);
         };
