@@ -8,7 +8,7 @@
     <style>
         body { background: #000; color: #fff; margin: 0; padding: 0; font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         #login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:100; }
-        input { padding: 15px; font-size: 18px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; width: 220px; text-align: center; background: #222; color: #fff; outline: none; }
+        input { padding: 15px; font-size: 18px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; width: 220px; text-align: center; background: #222; color: #fff; }
         button { padding: 15px 40px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         #content { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; }
         .player-container { position: relative; width: 100%; padding-top: 177.77%; /* 9:16 비율 */ }
@@ -19,16 +19,16 @@
 <body>
 
     <div id="login-overlay">
-        <h2 style="margin-bottom:20px;">🔐 EPISODE ACCESS</h2>
-        <input type="password" id="pw-input" placeholder="Password (12345)" autofocus>
-        <button onclick="checkPassword()">GO</button>
+        <h2 style="margin-bottom:20px;">🔐 PASSWORD</h2>
+        <input type="password" id="pw-input" placeholder="12345" autofocus>
+        <button onclick="checkPassword()">ENTER</button>
     </div>
 
     <div id="content">
         <div class="player-container">
             <iframe id="bunny-player" src="" allow="autoplay; fullscreen; playsinline" allowfullscreen></iframe>
         </div>
-        <div id="info-bar">영상을 불러오는 중입니다...</div>
+        <div id="info-bar">목록 로드 중...</div>
     </div>
 
     <script>
@@ -45,67 +45,61 @@
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('content').style.display = 'flex';
                 fetchVideos();
-            } else { alert("비밀번호가 틀렸습니다."); }
+            } else { alert("비밀번호 틀림"); }
         }
 
         async function fetchVideos() {
-            // CORS 차단을 피하기 위해 공개 프록시 서비스를 이용해 요청합니다.
-            const url = `https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100`;
-            const proxyUrl = `https://api.allorigins.win{encodeURIComponent(url)}`;
+            // 직접 호출 시 CORS 에러를 피하기 위한 우회(Proxy) 주소입니다.
+            const targetUrl = `https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100`;
+            const proxyUrl = `https://api.allorigins.win{encodeURIComponent(targetUrl)}`;
 
             try {
-                const response = await fetch(proxyUrl);
-                const result = await response.json();
+                // 이 방식은 헤더(AccessKey)를 직접 보내지 않고 URL 뒤에 붙이거나 
+                // 프록시 서버 설정을 활용해야 할 수 있습니다. 
+                // 버니넷은 보안이 강력하므로 아래와 같이 '직접 Fetch' 설정을 보강합니다.
                 
-                // 프록시 응답 내의 실제 데이터를 파싱합니다.
-                const data = JSON.parse(result.contents);
+                const response = await fetch(targetUrl, {
+                    method: 'GET',
+                    headers: {
+                        'AccessKey': API_KEY,
+                        'accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error("API 인증 실패 (401/403)");
+
+                const data = await response.json();
                 
                 if (data && data.items) {
-                    // 1. 이름순 정렬 (숫자 포함 인식)
+                    // 이름순 정렬
                     videoList = data.items.sort((a, b) => 
-                        a.title.localeCompare(b.title, undefined, {numeric: true, sensitivity: 'base'})
+                        a.title.localeCompare(b.title, undefined, {numeric: true})
                     );
-                    
-                    if (videoList.length > 0) {
-                        playVideo(0);
-                    } else {
-                        infoBar.innerText = "라이브러리에 영상이 없습니다.";
-                    }
+                    if (videoList.length > 0) playVideo(0);
+                    else infoBar.innerText = "비디오가 없습니다.";
                 }
             } catch (err) {
                 console.error(err);
-                infoBar.innerText = "❌ 데이터 로드 실패. API 키나 보안 설정을 확인하세요.";
+                infoBar.innerText = "❌ 오류: " + err.message + " (CORS 차단 가능성)";
+                // 만약 여기서 실패하면 버니넷 [Security] 메뉴에서 'Allowed Domains'를 완전히 비워야 합니다.
             }
         }
 
         function playVideo(index) {
             if (index >= videoList.length) {
-                infoBar.innerText = "✅ 정주행 완료!";
+                infoBar.innerText = "모든 재생 완료";
                 return;
             }
-
             currentIndex = index;
             const video = videoList[index];
-            
-            // 모바일 인라인 재생 및 자동재생 설정 적용
-            const embedUrl = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.guid}?autoplay=true&playsinline=1&preload=true`;
-            
-            iframe.src = embedUrl;
-            infoBar.innerText = `현재 재생 [${index + 1}/${videoList.length}] : ${video.title}`;
+            iframe.src = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.guid}?autoplay=true&playsinline=1`;
+            infoBar.innerText = `[${index + 1}/${videoList.length}] ${video.title}`;
 
-            // Player.js를 사용하여 영상이 끝나는 시점을 감지합니다.
             const player = new playerjs.Player(iframe);
             player.on('ready', () => {
-                player.off('ended'); // 이전 리스너 제거
-                player.on('ended', () => {
-                    console.log("영상 종료 -> 다음 영상 재생");
-                    playVideo(currentIndex + 1);
-                });
+                player.on('ended', () => playVideo(currentIndex + 1));
             });
         }
-
-        // 엔터키 지원
-        document.getElementById('pw-input').onkeypress = (e) => { if(e.key === 'Enter') checkPassword(); };
     </script>
 </body>
 </html>
