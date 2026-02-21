@@ -8,19 +8,19 @@
     <style>
         body { background: #000; color: #fff; margin: 0; padding: 0; font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         #login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:100; }
-        input { padding: 15px; font-size: 18px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; width: 220px; text-align: center; background: #222; color: #fff; }
-        button { padding: 15px 40px; font-size: 18px; background: #e91e63; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        input { padding: 15px; font-size: 18px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; width: 220px; text-align: center; background: #222; color: #fff; outline: none; }
+        button { padding: 15px 40px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         #content { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; }
         .player-container { position: relative; width: 100%; padding-top: 177.77%; /* 9:16 비율 */ }
         iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
-        #info-bar { padding: 15px; background: rgba(0,0,0,0.8); font-size: 12px; text-align: center; color: #aaa; position: absolute; bottom: 0; width: 100%; }
+        #info-bar { padding: 15px; background: rgba(0,0,0,0.8); font-size: 12px; text-align: center; color: #aaa; position: absolute; bottom: 0; width: 100%; z-index: 10; }
     </style>
 </head>
 <body>
 
     <div id="login-overlay">
-        <h2 style="margin-bottom:20px;">🔐 PASSWORD</h2>
-        <input type="password" id="pw-input" placeholder="Enter 12345" autofocus>
+        <h2 style="margin-bottom:20px;">🔐 EPISODE ACCESS</h2>
+        <input type="password" id="pw-input" placeholder="Password (12345)" autofocus>
         <button onclick="checkPassword()">GO</button>
     </div>
 
@@ -28,7 +28,7 @@
         <div class="player-container">
             <iframe id="bunny-player" src="" allow="autoplay; fullscreen; playsinline" allowfullscreen></iframe>
         </div>
-        <div id="info-bar">데이터를 불러오는 중...</div>
+        <div id="info-bar">영상을 불러오는 중입니다...</div>
     </div>
 
     <script>
@@ -49,63 +49,63 @@
         }
 
         async function fetchVideos() {
-            // 보안 차단(CORS) 우회를 위해 프록시 서버를 경유합니다.
-            const targetUrl = `https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100`;
-            const proxyUrl = `https://api.allorigins.win{encodeURIComponent(targetUrl)}`;
+            // CORS 차단을 피하기 위해 공개 프록시 서비스를 이용해 요청합니다.
+            const url = `https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100`;
+            const proxyUrl = `https://api.allorigins.win{encodeURIComponent(url)}`;
 
             try {
-                const response = await fetch(proxyUrl, {
-                    headers: { 'AccessKey': API_KEY } // 주의: 일부 프록시는 헤더 전달이 제한될 수 있음
-                });
-                
+                const response = await fetch(proxyUrl);
                 const result = await response.json();
-                // allorigins 프록시는 응답 데이터를 'contents' 필드에 담아줍니다.
+                
+                // 프록시 응답 내의 실제 데이터를 파싱합니다.
                 const data = JSON.parse(result.contents);
                 
                 if (data && data.items) {
-                    // 이름순(숫자 포함) 정렬
-                    videoList = data.items.sort((a, b) => a.title.localeCompare(b.title, undefined, {numeric: true}));
-                    if (videoList.length > 0) playVideo(0);
-                    else infoBar.innerText = "비디오가 없습니다.";
-                } else {
-                    throw new Error("데이터 구조 오류");
+                    // 1. 이름순 정렬 (숫자 포함 인식)
+                    videoList = data.items.sort((a, b) => 
+                        a.title.localeCompare(b.title, undefined, {numeric: true, sensitivity: 'base'})
+                    );
+                    
+                    if (videoList.length > 0) {
+                        playVideo(0);
+                    } else {
+                        infoBar.innerText = "라이브러리에 영상이 없습니다.";
+                    }
                 }
-
             } catch (err) {
-                // 프록시 없이 직접 시도 (최후의 수단)
-                tryDirectFetch();
-            }
-        }
-
-        async function tryDirectFetch() {
-            try {
-                const response = await fetch(`https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100`, {
-                    headers: { 'AccessKey': API_KEY, 'accept': 'application/json' }
-                });
-                const data = await response.json();
-                videoList = data.items.sort((a, b) => a.title.localeCompare(b.title, undefined, {numeric: true}));
-                if (videoList.length > 0) playVideo(0);
-            } catch (e) {
-                infoBar.innerText = "❌ 연결 오류: API 키 또는 도메인 허용 설정을 확인하세요.";
+                console.error(err);
+                infoBar.innerText = "❌ 데이터 로드 실패. API 키나 보안 설정을 확인하세요.";
             }
         }
 
         function playVideo(index) {
             if (index >= videoList.length) {
-                infoBar.innerText = "🎉 모든 영상 재생 완료";
+                infoBar.innerText = "✅ 정주행 완료!";
                 return;
             }
+
             currentIndex = index;
             const video = videoList[index];
-            iframe.src = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.guid}?autoplay=true&playsinline=1`;
-            infoBar.innerText = `재생 중 [${index + 1}/${videoList.length}]: ${video.title}`;
+            
+            // 모바일 인라인 재생 및 자동재생 설정 적용
+            const embedUrl = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.guid}?autoplay=true&playsinline=1&preload=true`;
+            
+            iframe.src = embedUrl;
+            infoBar.innerText = `현재 재생 [${index + 1}/${videoList.length}] : ${video.title}`;
 
-            // Player.js로 다음 영상 자동 재생 설정
+            // Player.js를 사용하여 영상이 끝나는 시점을 감지합니다.
             const player = new playerjs.Player(iframe);
             player.on('ready', () => {
-                player.on('ended', () => playVideo(currentIndex + 1));
+                player.off('ended'); // 이전 리스너 제거
+                player.on('ended', () => {
+                    console.log("영상 종료 -> 다음 영상 재생");
+                    playVideo(currentIndex + 1);
+                });
             });
         }
+
+        // 엔터키 지원
+        document.getElementById('pw-input').onkeypress = (e) => { if(e.key === 'Enter') checkPassword(); };
     </script>
 </body>
 </html>
