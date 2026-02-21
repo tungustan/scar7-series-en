@@ -2,68 +2,46 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Scar7 Series Player</title>
     <script src="https://assets.mediadelivery.net"></script>
     <style>
-        body { background-color: #000; color: #fff; text-align: center; font-family: sans-serif; margin: 0; padding: 20px; }
-        .container { position: relative; padding-top: 56.25%; width: 100%; max-width: 850px; margin: auto; border: 1px solid #333; }
+        body { background-color: #000; color: #fff; text-align: center; padding: 20px; }
+        .container { position: relative; padding-top: 56.25%; width: 100%; max-width: 800px; margin: auto; }
         iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-        h2 { font-size: 1.1rem; color: #ccc; margin-bottom: 15px; }
     </style>
 </head>
 <body>
-
-    <h2 id="status">비디오 로딩 중...</h2>
-    
+    <h2 id="status">연결 중...</h2>
     <div class="container">
         <iframe id="video-iframe" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
-
     <script>
         const myVideos = [
             { title: "EP01", id: "17b2f4f3-96ff-40e7-9462-2eaed6bab2c2" },
             { title: "EP02", id: "fd9b1c33-d2e4-4c99-b68e-082c88d423bf" },
             { title: "EP03", id: "200ca492-a946-49b5-9adb-d8e4a200146d" }
         ];
-
-        myVideos.sort((a, b) => a.title.localeCompare(b.title, 'en'));
-
         let currentIdx = 0;
         const iframe = document.getElementById('video-iframe');
         const status = document.getElementById('status');
 
         function playVideo(index) {
-            if (index >= myVideos.length) {
-                status.innerText = "모든 재생 완료 ✨";
-                return;
-            }
-
+            if (index >= myVideos.length) { status.innerText = "재생 완료"; return; }
             const video = myVideos[index];
-            status.innerText = "현재 재생 (" + (index + 1) + "/" + myVideos.length + "): " + video.title;
+            status.innerText = "현재 재생: " + video.title;
+            // 주소 형식을 더 단순하게 변경했습니다.
+            iframe.src = "https://iframe.mediadelivery.net" + video.id + "?autoplay=true&muted=true";
 
-            // [수정] 주소 형식을 안전한 정적 문자열 결합으로 변경
-            // 반드시 .net 뒤에 /embed/603825/ 가 정확히 들어가야 합니다.
-            var finalUrl = "https://iframe.mediadelivery.net" + video.id.trim() + "?autoplay=true&muted=true";
-            iframe.src = finalUrl;
-
-            // Player.js 감지 및 다음 영상 예약
-            var timer = setInterval(function() {
+            const timer = setInterval(function() {
                 if (typeof playerjs !== 'undefined') {
                     clearInterval(timer);
-                    var player = new playerjs.Player(iframe);
-                    player.on('ready', function() {
-                        player.on('ended', function() {
-                            currentIdx++;
-                            playVideo(currentIdx);
-                        });
+                    const player = new playerjs.Player(iframe);
+                    player.on('ready', () => {
+                        player.on('ended', () => { currentIdx++; playVideo(currentIdx); });
                     });
                 }
             }, 500);
         }
-
-        window.onload = function() {
-            if (myVideos.length > 0) playVideo(0);
-        };
+        window.onload = () => playVideo(0);
     </script>
 </body>
 </html>
