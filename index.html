@@ -57,27 +57,20 @@
 </div>
 
 <script>
-  // GitHub JSON URL (브라우저에서 접근 가능해야 함)
-  const githubVideoListUrl = 'https://raw.githubusercontent.com/사용자명/저장소명/브랜치/videos.json';
+  // 1️⃣ 비디오 목록을 코드 안에 직접 넣기 (Bunny.net HLS URL)
+  const videos = [
+    { name: "VideoA", src: "https://video.bunnycdn.com/stream/603825/VideoA.m3u8" },
+    { name: "VideoB", src: "https://video.bunnycdn.com/stream/603825/VideoB.m3u8" },
+    { name: "VideoC", src: "https://video.bunnycdn.com/stream/603825/VideoC.m3u8" }
+  ];
 
-  let videos = [];
+  // 2️⃣ 이름순 정렬
+  videos.sort((a,b) => a.name.localeCompare(b.name));
+
   let currentIndex = 0;
   let player;
 
-  // 비디오 목록 불러오기
-  async function loadVideos() {
-    try {
-      const res = await fetch(githubVideoListUrl);
-      videos = await res.json();
-      // 이름순 정렬
-      videos.sort((a,b) => a.name.localeCompare(b.name));
-    } catch (err) {
-      console.error("비디오 목록을 가져오는데 실패했습니다:", err);
-      alert("비디오 목록 로딩 실패");
-    }
-  }
-
-  // 플레이어 초기화
+  // 3️⃣ 플레이어 초기화
   function initPlayer() {
     if(videos.length === 0) return;
 
@@ -95,7 +88,7 @@
       fullscreen: true
     });
 
-    // 비디오 끝나면 다음 비디오 재생
+    // 4️⃣ 비디오 끝나면 다음 비디오 자동 재생
     player.on('ended', () => {
       currentIndex++;
       if(currentIndex < videos.length){
@@ -105,9 +98,8 @@
     });
   }
 
-  // 모바일에서 첫 터치로 자동재생
-  document.getElementById('start-overlay').addEventListener('click', async () => {
-    await loadVideos();
+  // 5️⃣ 모바일 터치로 시작
+  document.getElementById('start-overlay').addEventListener('click', () => {
     initPlayer();
   });
 </script>
