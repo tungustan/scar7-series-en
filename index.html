@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,7 +18,7 @@
     #player-container {
         width: 100%;
         max-width: 800px;
-        aspect-ratio: 16/9;
+        aspect-ratio: 9/16; /* Vertical video */
         margin-top: 20px;
     }
     ul#video-list {
@@ -53,21 +53,20 @@
 <ul id="video-list"></ul>
 
 <script>
-    // 테스트용 에피소드 리스트
     const episodes = [
-        {name: "에피소드 01", url: "https://iframe.mediadelivery.net/play/603825/17b2f4f3-96ff-40e7-9462-2eaed6bab2c2"},
-        {name: "에피소드 02", url: "https://iframe.mediadelivery.net/play/603825/fd9b1c33-d2e4-4c99-b68e-082c88d423bf"},
-        {name: "에피소드 03", url: "https://iframe.mediadelivery.net/play/603825/200ca492-a946-49b5-9adb-d8e4a200146d"}
+        {name: "EP01", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP01_EN.mov"},
+        {name: "EP02", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP02_EN.mov"},
+        {name: "EP03", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP03_EN.mov"}
     ];
 
-    // 이름순 정렬
+    // Sort by name
     episodes.sort((a, b) => a.name.localeCompare(b.name));
 
     const playerContainer = document.getElementById('player-container');
     const videoList = document.getElementById('video-list');
     let currentIndex = 0;
 
-    // Bunny Player 생성
+    // Create Bunny Player
     const player = new BunnyPlayer(playerContainer, {
         url: episodes[currentIndex].url,
         autoplay: true,
@@ -76,28 +75,27 @@
         loop: false
     });
 
-    // 리스트 생성 및 클릭 이벤트
+    // Generate episode list
     episodes.forEach((ep, index) => {
         const li = document.createElement('li');
         li.textContent = ep.name;
         li.addEventListener('click', () => {
             currentIndex = index;
-            playEpisode(currentIndex, true); // 클릭 시 전체화면
+            playEpisode(currentIndex, true); // Fullscreen on click
         });
         videoList.appendChild(li);
     });
 
-    // 영상 재생 함수
     function playEpisode(index, fullscreen = false) {
         player.load(episodes[index].url).then(() => {
             player.play();
             if(fullscreen && player.requestFullscreen) {
-                player.requestFullscreen(); // 전체화면 요청
+                player.requestFullscreen(); // Enter fullscreen
             }
         });
     }
 
-    // 영상 종료 시 자동으로 다음 영상 재생
+    // Auto-play next episode when current ends
     player.on('ended', () => {
         currentIndex++;
         if(currentIndex >= episodes.length) currentIndex = 0;
