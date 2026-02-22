@@ -3,113 +3,102 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bunny.net 모바일 자동재생 플레이어</title>
+<title>에피소드 라이브러리 테스트</title>
+<script src="https://cdn.bunny.net/player/latest/bunny-player.min.js"></script>
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background-color: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  #player {
-    width: 100%;
-    height: 100%;
-    display: none;
-  }
-
-  #start-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    cursor: pointer;
-    z-index: 1000;
-  }
-
-  #start-overlay span {
-    font-size: 1.2rem;
-    padding: 1rem 2rem;
-    border: 2px solid white;
-    border-radius: 10px;
-    color: white;
-  }
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #000;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    #player-container {
+        width: 100%;
+        max-width: 800px;
+        aspect-ratio: 16/9;
+        margin-top: 20px;
+    }
+    ul#video-list {
+        list-style: none;
+        padding: 0;
+        width: 90%;
+        max-width: 800px;
+        margin: 10px auto;
+    }
+    ul#video-list li {
+        padding: 10px;
+        background: #222;
+        margin-bottom: 5px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    ul#video-list li:hover {
+        background: #444;
+    }
+    @media (max-width: 600px) {
+        ul#video-list li {
+            font-size: 14px;
+            padding: 8px;
+        }
+    }
 </style>
-<script src="https://play.bunnycdn.com/player/latest/bunny-player.min.js"></script>
 </head>
 <body>
-
-<div id="player"></div>
-
-<div id="start-overlay">
-  <span>화면을 터치하여 재생 시작</span>
-</div>
+<h1>에피소드 라이브러리 테스트</h1>
+<div id="player-container"></div>
+<ul id="video-list"></ul>
 
 <script>
-  // 1️⃣ 실제 Bunny.net HLS URL을 여기에 넣기
-  const videos = [
-    { name: "Ep01", src: "https://iframe.mediadelivery.net/play/603825/17b2f4f3-96ff-40e7-9462-2eaed6bab2c2" },
-    { name: "Ep02", src: "https://iframe.mediadelivery.net/play/603825/fd9b1c33-d2e4-4c99-b68e-082c88d423bf" },
-    { name: "Ep03", src: "https://iframe.mediadelivery.net/play/603825/200ca492-a946-49b5-9adb-d8e4a200146d" }
-  ];
+    // 테스트용 에피소드 01~03
+    const episodes = [
+        {name: "에피소드 01", url: "https://iframe.mediadelivery.net/play/603825/17b2f4f3-96ff-40e7-9462-2eaed6bab2c2"},
+        {name: "에피소드 02", url: "https://iframe.mediadelivery.net/play/603825/fd9b1c33-d2e4-4c99-b68e-082c88d423bf"},
+        {name: "에피소드 03", url: "https://iframe.mediadelivery.net/play/603825/200ca492-a946-49b5-9adb-d8e4a200146d"}
+    ];
 
-  // 2️⃣ 이름 기준 정렬
-  videos.sort((a,b) => a.name.localeCompare(b.name));
+    // 이름순 정렬
+    episodes.sort((a, b) => a.name.localeCompare(b.name));
 
-  let currentIndex = 0;
-  let player;
+    const playerContainer = document.getElementById('player-container');
+    const videoList = document.getElementById('video-list');
+    let currentIndex = 0;
 
-  // 3️⃣ 플레이어 초기화
-  function initPlayer() {
-    if(videos.length === 0) return;
-
-    document.getElementById('start-overlay').style.display = 'none';
-    const playerEl = document.getElementById('player');
-    playerEl.style.display = 'block';
-
-    player = new BunnyPlayer('#player', {
-      video: videos[currentIndex].src,
-      autoplay: true,
-      muted: true,   // 모바일 자동재생 가능
-      loop: false,
-      width: '100%',
-      height: '100%',
-      fullscreen: true
+    // Bunny Player 생성
+    const player = new BunnyPlayer(playerContainer, {
+        url: episodes[currentIndex].url,
+        autoplay: true,
+        controls: true,
+        muted: false,
+        loop: false
     });
 
-    // 4️⃣ 비디오 끝나면 다음 비디오 재생
+    // 리스트 표시 및 클릭 시 재생
+    episodes.forEach((ep, index) => {
+        const li = document.createElement('li');
+        li.textContent = ep.name;
+        li.addEventListener('click', () => {
+            currentIndex = index;
+            playEpisode(currentIndex);
+        });
+        videoList.appendChild(li);
+    });
+
+    function playEpisode(index) {
+        player.load(episodes[index].url).then(() => {
+            player.play();
+        });
+    }
+
+    // 영상 종료 시 자동으로 다음 에피소드 재생
     player.on('ended', () => {
-      currentIndex++;
-      if(currentIndex < videos.length){
-        player.load(videos[currentIndex].src);
-        player.play();
-      }
+        currentIndex++;
+        if(currentIndex >= episodes.length) currentIndex = 0;
+        playEpisode(currentIndex);
     });
-
-    // 5️⃣ 터치 시 음소거 해제 옵션
-    playerEl.addEventListener('click', () => {
-      if(player.isMuted()){
-        player.setMuted(false);
-      }
-    });
-  }
-
-  // 6️⃣ 모바일 첫 터치로 자동재생 시작
-  document.getElementById('start-overlay').addEventListener('click', () => {
-    initPlayer();
-  });
 </script>
-
 </body>
 </html>
