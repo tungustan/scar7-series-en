@@ -3,61 +3,113 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bunny.net 자동재생 플레이어</title>
+<title>Bunny.net 모바일 자동재생 플레이어</title>
 <style>
-  body, html {
+  html, body {
     margin: 0;
     padding: 0;
     height: 100%;
     background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
   }
+
   #player {
     width: 100%;
     height: 100%;
+    display: none; /* 처음엔 안내 문구만 보여줌 */
+  }
+
+  #start-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    cursor: pointer;
+    z-index: 1000;
+  }
+
+  #start-overlay span {
+    font-size: 1.2rem;
+    padding: 1rem 2rem;
+    border: 2px solid white;
+    border-radius: 10px;
   }
 </style>
-<!-- Bunny.net Player SDK -->
 <script src="https://play.bunnycdn.com/player/latest/bunny-player.min.js"></script>
 </head>
 <body>
 
 <div id="player"></div>
 
+<div id="start-overlay">
+  <span>화면을 터치하여 재생 시작</span>
+</div>
+
 <script>
-  // Bunny.net 스트림 라이브러리 ID
-  const libraryId = 603825;
+const libraryId = 603825; // Bunny.net 스트림 라이브러리 ID
+const apiUrl = `https://video.bunnycdn.com/library/${libraryId}/videos`;
 
-  // Bunny.net 라이브러리 API: 스트림 정보 가져오기
-  const apiUrl = `https://video.bunnycdn.com/library/${libraryId}/videos`;
+let videos = [];
+let currentIndex = 0;
+let player;
 
-  fetch(apiUrl)
-    .then(res => res.json())
-    .then(data => {
-      // 1. 이름순 정렬
-      const videos = data.Items.sort((a, b) => a.Title.localeCompare(b.Title));
-      let currentIndex = 0;
+// 비디오 목록 불러오기
+async function loadVideos() {
+  try {
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    videos = data.Items.sort((a,b) => a.Title.localeCompare(b.Title));
+  } catch (err) {
+    console.error("스트림 라이브러리 로딩 실패:", err);
+    alert("비디오 목록을 가져오는데 실패했습니다.");
+  }
+}
 
-      // 2. 플레이어 초기화
-      const player = new BunnyPlayer('#player', {
-        video: videos[currentIndex].Url, // HLS 링크
-        autoplay: true,
-        muted: false,
-        loop: false,
-        width: '100%',
-        height: '100%',
-        fullscreen: true
-      });
+// 플레이어 초기화 및 재생
+function initPlayer() {
+  if(videos.length === 0) return;
+  
+  document.getElementById('start-overlay').style.display = 'none';
+  const playerEl = document.getElementById('player');
+  playerEl.style.display = 'block';
 
-      // 3. 비디오 끝나면 다음 비디오 재생
-      player.on('ended', () => {
-        currentIndex++;
-        if (currentIndex < videos.length) {
-          player.load(videos[currentIndex].Url);
-          player.play();
-        }
-      });
-    })
-    .catch(err => console.error('스트림 라이브러리를 가져오는데 실패했습니다:', err));
+  player = new BunnyPlayer('#player', {
+    video: videos[currentIndex].Url,
+    autoplay: true,
+    muted: false,
+    loop: false,
+    width: '100%',
+    height: '100%',
+    fullscreen: true
+  });
+
+  // 비디오 끝나면 다음 비디오 재생
+  player.on('ended', () => {
+    currentIndex++;
+    if(currentIndex < videos.length){
+      player.load(videos[currentIndex].Url);
+      player.play();
+    }
+  });
+}
+
+// 모바일 iOS/Android에서 첫 터치로 자동재생 시작
+document.getElementById('start-overlay').addEventListener('click', async () => {
+  await loadVideos();
+  initPlayer();
+});
 </script>
 
 </body>
