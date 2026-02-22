@@ -17,13 +17,15 @@
     #player-container {
         width: 100%;
         max-width: 800px;
-        aspect-ratio: 9/16;
+        aspect-ratio: 9/16; /* vertical video */
         margin-top: 20px;
         position: relative;
+        background: #000;
     }
     video {
         width: 100%;
         height: 100%;
+        object-fit: contain; /* cover: 화면 꽉 채움, contain: 영상 비율 유지 */
         background: #000;
     }
     ul#video-list {
@@ -43,12 +45,6 @@
     }
     ul#video-list li:hover {
         background: #444;
-    }
-    @media (max-width: 600px) {
-        ul#video-list li {
-            font-size: 14px;
-            padding: 8px;
-        }
     }
 </style>
 </head>
@@ -72,34 +68,35 @@
     const videoList = document.getElementById('video-list');
     let currentIndex = 0;
 
-    function playEpisode(index, fullscreen=false) {
+    function playEpisode(index, fullscreen=false){
         video.src = episodes[index].url;
         video.play();
-        if(fullscreen) {
+        if(fullscreen){
             if(video.requestFullscreen) video.requestFullscreen();
             else if(video.webkitRequestFullscreen) video.webkitRequestFullscreen();
         }
     }
 
-    // generate list
+    // List generation
     episodes.forEach((ep,index)=>{
         const li = document.createElement('li');
         li.textContent = ep.name;
         li.addEventListener('click', ()=>{
             currentIndex = index;
-            playEpisode(currentIndex,true);
+            playEpisode(currentIndex, true);
         });
         videoList.appendChild(li);
     });
 
-    // auto next
+    // Auto-play next
     video.addEventListener('ended', ()=>{
         currentIndex++;
         if(currentIndex >= episodes.length) currentIndex = 0;
         playEpisode(currentIndex);
+        // Note: full screen may not auto-trigger due to browser policy
     });
 
-    // autoplay first episode
+    // Play first episode
     playEpisode(currentIndex);
 </script>
 </body>
