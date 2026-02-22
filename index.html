@@ -18,16 +18,17 @@
     #player-container {
         width: 100%;
         max-width: 800px;
-        aspect-ratio: 9/16; /* vertical video */
+        aspect-ratio: 9/16;
         margin-top: 20px;
         position: relative;
         background: #000;
+        display: none; /* 초기에는 숨김 */
     }
 
     video {
         width: 100%;
         height: 100%;
-        object-fit: cover; /* 화면 꽉 채우기 */
+        object-fit: cover;
         background: #000;
     }
 
@@ -36,15 +37,17 @@
         padding: 0;
         width: 90%;
         max-width: 800px;
-        margin: 10px auto;
+        margin: 20px auto;
     }
 
     ul#video-list li {
-        padding: 10px;
+        padding: 12px;
         background: #222;
-        margin-bottom: 5px;
-        border-radius: 5px;
+        margin-bottom: 6px;
+        border-radius: 6px;
         cursor: pointer;
+        text-align: center;
+        font-weight: bold;
         transition: background 0.3s;
     }
 
@@ -55,28 +58,20 @@
     @media (max-width: 600px) {
         ul#video-list li {
             font-size: 14px;
-            padding: 8px;
+            padding: 10px;
         }
-    }
-
-    #fullscreen-notice {
-        display: none;
-        color: #ff0;
-        font-size: 14px;
-        margin-top: 5px;
-        text-align: center;
     }
 </style>
 </head>
 <body>
+
 <h1>Anti-Scar Series (Vertical, EngSub)</h1>
+
+<ul id="video-list"></ul>
 
 <div id="player-container">
     <video id="video-player" controls></video>
 </div>
-<div id="fullscreen-notice">Tap video to enter fullscreen</div>
-
-<ul id="video-list"></ul>
 
 <script>
     const episodes = [
@@ -85,12 +80,12 @@
         {name: "EP03", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP03_EN.mp4"}
     ];
 
-    // Sort episodes by name
+    // Sort by EP name
     episodes.sort((a,b) => a.name.localeCompare(b.name));
 
-    const video = document.getElementById('video-player');
     const videoList = document.getElementById('video-list');
-    const notice = document.getElementById('fullscreen-notice');
+    const playerContainer = document.getElementById('player-container');
+    const video = document.getElementById('video-player');
     let currentIndex = 0;
 
     // Generate episode list
@@ -99,38 +94,37 @@
         li.textContent = ep.name;
         li.addEventListener('click', () => {
             currentIndex = index;
-            playEpisode(currentIndex, true);
+            startEpisode(currentIndex);
         });
         videoList.appendChild(li);
     });
 
-    function playEpisode(index, fullscreen=false) {
+    function startEpisode(index) {
+        playerContainer.style.display = 'block';  // 영상 플레이어 표시
+        videoList.style.display = 'none';         // 리스트 숨김
         video.src = episodes[index].url;
-        video.play().catch(()=>{console.log("Autoplay blocked. Click to start.")});
-        // Fullscreen attempt
-        if(fullscreen) {
+        video.load();
+
+        // 영상 준비 완료 후 재생
+        video.addEventListener('canplay', function playVideo() {
+            video.play().catch(()=>console.log("Autoplay blocked, tap to start"));
             if(video.requestFullscreen) video.requestFullscreen();
             else if(video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-        }
-        notice.style.display = fullscreen ? "none" : "block";
+            video.removeEventListener('canplay', playVideo);
+        });
     }
 
-    // Auto-play next episode
+    // 영상 종료 시 다음 EP 재생
     video.addEventListener('ended', () => {
         currentIndex++;
         if(currentIndex >= episodes.length) currentIndex = 0;
-        playEpisode(currentIndex);
-        // Fullscreen may not persist due to browser policy, but object-fit: cover ensures full container coverage
+        video.src = episodes[currentIndex].url;
+        video.load();
+        video.addEventListener('canplay', function playNext() {
+            video.play().catch(()=>console.log("Autoplay blocked"));
+            video.removeEventListener('canplay', playNext);
+        });
     });
-
-    // Show notice if user taps to enter fullscreen
-    video.addEventListener('click', () => {
-        if(document.fullscreenElement === null) {
-            notice.style.display = "none";
-        }
-    });
-
-    // Initially just show list
 </script>
 </body>
 </html>
