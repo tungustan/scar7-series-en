@@ -18,7 +18,7 @@
     #player-container {
         width: 100%;
         max-width: 800px;
-        aspect-ratio: 9/16; /* Vertical video */
+        aspect-ratio: 9/16; /* vertical video */
         margin-top: 20px;
     }
     ul#video-list {
@@ -53,21 +53,19 @@
 <ul id="video-list"></ul>
 
 <script>
-    // Direct mp4 URLs
+    // mp4 URLs
     const episodes = [
         {name: "EP01", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP01_EN.mp4"},
         {name: "EP02", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP02_EN.mp4"},
         {name: "EP03", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP03_EN.mp4"}
     ];
 
-    // Sort episodes by name
-    episodes.sort((a, b) => a.name.localeCompare(b.name));
+    episodes.sort((a,b)=>a.name.localeCompare(b.name));
 
     const playerContainer = document.getElementById('player-container');
     const videoList = document.getElementById('video-list');
     let currentIndex = 0;
 
-    // Create Bunny Player
     const player = new BunnyPlayer(playerContainer, {
         url: episodes[currentIndex].url,
         autoplay: true,
@@ -76,28 +74,28 @@
         loop: false
     });
 
-    // Generate episode list
+    // Create episode list
     episodes.forEach((ep, index) => {
         const li = document.createElement('li');
         li.textContent = ep.name;
         li.addEventListener('click', () => {
             currentIndex = index;
-            playEpisode(currentIndex, true); // Fullscreen on click
+            playEpisode(currentIndex, true); // fullscreen
         });
         videoList.appendChild(li);
     });
 
-    function playEpisode(index, fullscreen = false) {
-        player.load(episodes[index].url).then(() => {
+    function playEpisode(index, fullscreen=false){
+        player.load(episodes[index].url).then(()=>{
             player.play();
-            if(fullscreen && player.requestFullscreen) {
-                player.requestFullscreen(); // Enter fullscreen
+            if(fullscreen && player.requestFullscreen){
+                player.requestFullscreen();
             }
         });
     }
 
-    // Auto-play next episode when current ends
-    player.on('ended', () => {
+    // Auto-play next episode
+    player.on('ended', ()=>{
         currentIndex++;
         if(currentIndex >= episodes.length) currentIndex = 0;
         playEpisode(currentIndex);
