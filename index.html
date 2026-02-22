@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>에피소드 라이브러리 테스트</title>
-<script src="https://cdn.bunny.net/player/latest/bunny-player.min.js"></script>
 <style>
     body {
         margin: 0;
@@ -49,56 +48,43 @@
 </head>
 <body>
 <h1>에피소드 라이브러리 테스트</h1>
-<div id="player-container"></div>
+<div id="player-container">
+    <iframe id="bunny-player" src="https://iframe.mediadelivery.net/play/603825/17b2f4f3-96ff-40e7-9462-2eaed6bab2c2?autoplay=true" 
+        frameborder="0" allow="autoplay; fullscreen" allowfullscreen width="100%" height="100%"></iframe>
+</div>
 <ul id="video-list"></ul>
 
 <script>
-    // 테스트용 에피소드 01~03
     const episodes = [
-        {name: "에피소드 01", url: "https://iframe.mediadelivery.net/play/603825/17b2f4f3-96ff-40e7-9462-2eaed6bab2c2"},
-        {name: "에피소드 02", url: "https://iframe.mediadelivery.net/play/603825/fd9b1c33-d2e4-4c99-b68e-082c88d423bf"},
-        {name: "에피소드 03", url: "https://iframe.mediadelivery.net/play/603825/200ca492-a946-49b5-9adb-d8e4a200146d"}
+        {name: "에피소드 01", url: "https://iframe.mediadelivery.net/play/603825/17b2f4f3-96ff-40e7-9462-2eaed6bab2c2?autoplay=true"},
+        {name: "에피소드 02", url: "https://iframe.mediadelivery.net/play/603825/fd9b1c33-d2e4-4c99-b68e-082c88d423bf?autoplay=true"},
+        {name: "에피소드 03", url: "https://iframe.mediadelivery.net/play/603825/200ca492-a946-49b5-9adb-d8e4a200146d?autoplay=true"}
     ];
 
     // 이름순 정렬
     episodes.sort((a, b) => a.name.localeCompare(b.name));
 
-    const playerContainer = document.getElementById('player-container');
+    const iframe = document.getElementById('bunny-player');
     const videoList = document.getElementById('video-list');
     let currentIndex = 0;
 
-    // Bunny Player 생성
-    const player = new BunnyPlayer(playerContainer, {
-        url: episodes[currentIndex].url,
-        autoplay: true,
-        controls: true,
-        muted: false,
-        loop: false
-    });
-
-    // 리스트 표시 및 클릭 시 재생
     episodes.forEach((ep, index) => {
         const li = document.createElement('li');
         li.textContent = ep.name;
         li.addEventListener('click', () => {
             currentIndex = index;
-            playEpisode(currentIndex);
+            iframe.src = episodes[index].url;
         });
         videoList.appendChild(li);
     });
 
-    function playEpisode(index) {
-        player.load(episodes[index].url).then(() => {
-            player.play();
-        });
-    }
-
-    // 영상 종료 시 자동으로 다음 에피소드 재생
-    player.on('ended', () => {
+    // 자동 재생 처리 (iframe은 종료 이벤트를 못 감지함)
+    // 간단 테스트용으로 30초마다 다음 영상으로 이동
+    setInterval(() => {
         currentIndex++;
         if(currentIndex >= episodes.length) currentIndex = 0;
-        playEpisode(currentIndex);
-    });
+        iframe.src = episodes[currentIndex].url;
+    }, 30000); // 실제 영상 길이에 맞춰 조정 필요
 </script>
 </body>
 </html>
