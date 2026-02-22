@@ -57,14 +57,14 @@
 </div>
 
 <script>
-  // 1️⃣ 비디오 목록을 코드 안에 직접 넣기 (Bunny.net HLS URL)
+  // 1️⃣ 실제 Bunny.net HLS URL을 여기에 넣기
   const videos = [
-    { name: "VideoA", src: "https://video.bunnycdn.com/stream/603825/VideoA.m3u8" },
-    { name: "VideoB", src: "https://video.bunnycdn.com/stream/603825/VideoB.m3u8" },
-    { name: "VideoC", src: "https://video.bunnycdn.com/stream/603825/VideoC.m3u8" }
+    { name: "Ep01", src: "https://iframe.mediadelivery.net/play/603825/17b2f4f3-96ff-40e7-9462-2eaed6bab2c2" },
+    { name: "Ep02", src: "https://iframe.mediadelivery.net/play/603825/fd9b1c33-d2e4-4c99-b68e-082c88d423bf" },
+    { name: "Ep03", src: "https://iframe.mediadelivery.net/play/603825/200ca492-a946-49b5-9adb-d8e4a200146d" }
   ];
 
-  // 2️⃣ 이름순 정렬
+  // 2️⃣ 이름 기준 정렬
   videos.sort((a,b) => a.name.localeCompare(b.name));
 
   let currentIndex = 0;
@@ -81,14 +81,14 @@
     player = new BunnyPlayer('#player', {
       video: videos[currentIndex].src,
       autoplay: true,
-      muted: false,
+      muted: true,   // 모바일 자동재생 가능
       loop: false,
       width: '100%',
       height: '100%',
       fullscreen: true
     });
 
-    // 4️⃣ 비디오 끝나면 다음 비디오 자동 재생
+    // 4️⃣ 비디오 끝나면 다음 비디오 재생
     player.on('ended', () => {
       currentIndex++;
       if(currentIndex < videos.length){
@@ -96,9 +96,16 @@
         player.play();
       }
     });
+
+    // 5️⃣ 터치 시 음소거 해제 옵션
+    playerEl.addEventListener('click', () => {
+      if(player.isMuted()){
+        player.setMuted(false);
+      }
+    });
   }
 
-  // 5️⃣ 모바일 터치로 시작
+  // 6️⃣ 모바일 첫 터치로 자동재생 시작
   document.getElementById('start-overlay').addEventListener('click', () => {
     initPlayer();
   });
