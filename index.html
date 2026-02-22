@@ -14,6 +14,7 @@
         flex-direction: column;
         align-items: center;
     }
+
     #player-container {
         width: 100%;
         max-width: 800px;
@@ -22,12 +23,14 @@
         position: relative;
         background: #000;
     }
+
     video {
         width: 100%;
         height: 100%;
-        object-fit: contain; /* cover: 화면 꽉 채움, contain: 영상 비율 유지 */
+        object-fit: cover; /* 화면 꽉 채우기 */
         background: #000;
     }
+
     ul#video-list {
         list-style: none;
         padding: 0;
@@ -35,6 +38,7 @@
         max-width: 800px;
         margin: 10px auto;
     }
+
     ul#video-list li {
         padding: 10px;
         background: #222;
@@ -43,16 +47,35 @@
         cursor: pointer;
         transition: background 0.3s;
     }
+
     ul#video-list li:hover {
         background: #444;
+    }
+
+    @media (max-width: 600px) {
+        ul#video-list li {
+            font-size: 14px;
+            padding: 8px;
+        }
+    }
+
+    #fullscreen-notice {
+        display: none;
+        color: #ff0;
+        font-size: 14px;
+        margin-top: 5px;
+        text-align: center;
     }
 </style>
 </head>
 <body>
 <h1>Anti-Scar Series (Vertical, EngSub)</h1>
+
 <div id="player-container">
     <video id="video-player" controls></video>
 </div>
+<div id="fullscreen-notice">Tap video to enter fullscreen</div>
+
 <ul id="video-list"></ul>
 
 <script>
@@ -62,42 +85,52 @@
         {name: "EP03", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP03_EN.mp4"}
     ];
 
-    episodes.sort((a,b)=>a.name.localeCompare(b.name));
+    // Sort episodes by name
+    episodes.sort((a,b) => a.name.localeCompare(b.name));
 
     const video = document.getElementById('video-player');
     const videoList = document.getElementById('video-list');
+    const notice = document.getElementById('fullscreen-notice');
     let currentIndex = 0;
 
-    function playEpisode(index, fullscreen=false){
-        video.src = episodes[index].url;
-        video.play();
-        if(fullscreen){
-            if(video.requestFullscreen) video.requestFullscreen();
-            else if(video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-        }
-    }
-
-    // List generation
-    episodes.forEach((ep,index)=>{
+    // Generate episode list
+    episodes.forEach((ep, index) => {
         const li = document.createElement('li');
         li.textContent = ep.name;
-        li.addEventListener('click', ()=>{
+        li.addEventListener('click', () => {
             currentIndex = index;
             playEpisode(currentIndex, true);
         });
         videoList.appendChild(li);
     });
 
-    // Auto-play next
-    video.addEventListener('ended', ()=>{
+    function playEpisode(index, fullscreen=false) {
+        video.src = episodes[index].url;
+        video.play().catch(()=>{console.log("Autoplay blocked. Click to start.")});
+        // Fullscreen attempt
+        if(fullscreen) {
+            if(video.requestFullscreen) video.requestFullscreen();
+            else if(video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+        }
+        notice.style.display = fullscreen ? "none" : "block";
+    }
+
+    // Auto-play next episode
+    video.addEventListener('ended', () => {
         currentIndex++;
         if(currentIndex >= episodes.length) currentIndex = 0;
         playEpisode(currentIndex);
-        // Note: full screen may not auto-trigger due to browser policy
+        // Fullscreen may not persist due to browser policy, but object-fit: cover ensures full container coverage
     });
 
-    // Play first episode
-    playEpisode(currentIndex);
+    // Show notice if user taps to enter fullscreen
+    video.addEventListener('click', () => {
+        if(document.fullscreenElement === null) {
+            notice.style.display = "none";
+        }
+    });
+
+    // Initially just show list
 </script>
 </body>
 </html>
