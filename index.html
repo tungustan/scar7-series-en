@@ -1,105 +1,64 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bunny Player 603825</title>
-    <script src="https://assets.mediadelivery.net"></script>
-    <style>
-        body { background: #000; color: #fff; margin: 0; padding: 0; font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
-        #login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:100; }
-        input { padding: 15px; font-size: 18px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; width: 220px; text-align: center; background: #222; color: #fff; }
-        button { padding: 15px 40px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        #content { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; }
-        .player-container { position: relative; width: 100%; padding-top: 177.77%; /* 9:16 비율 */ }
-        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
-        #info-bar { padding: 15px; background: rgba(0,0,0,0.8); font-size: 12px; text-align: center; color: #aaa; position: absolute; bottom: 0; width: 100%; z-index: 10; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bunny.net 자동재생 플레이어</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: black;
+  }
+  #player {
+    width: 100%;
+    height: 100%;
+  }
+</style>
+<!-- Bunny.net Player SDK -->
+<script src="https://play.bunnycdn.com/player/latest/bunny-player.min.js"></script>
 </head>
 <body>
 
-    <div id="login-overlay">
-        <h2 style="margin-bottom:20px;">🔐 PASSWORD</h2>
-        <input type="password" id="pw-input" placeholder="12345" autofocus>
-        <button onclick="checkPassword()">ENTER</button>
-    </div>
+<div id="player"></div>
 
-    <div id="content">
-        <div class="player-container">
-            <iframe id="bunny-player" src="" allow="autoplay; fullscreen; playsinline" allowfullscreen></iframe>
-        </div>
-        <div id="info-bar">목록 로드 중...</div>
-    </div>
+<script>
+  // Bunny.net 스트림 라이브러리 ID
+  const libraryId = 603825;
 
-    <script>
-        const LIBRARY_ID = '603825';
-        const API_KEY = '8b148e03-db31-41c1-89fa29184619-0d59-4439';
+  // Bunny.net 라이브러리 API: 스트림 정보 가져오기
+  const apiUrl = `https://video.bunnycdn.com/library/${libraryId}/videos`;
 
-        let videoList = [];
-        let currentIndex = 0;
-        const iframe = document.getElementById('bunny-player');
-        const infoBar = document.getElementById('info-bar');
+  fetch(apiUrl)
+    .then(res => res.json())
+    .then(data => {
+      // 1. 이름순 정렬
+      const videos = data.Items.sort((a, b) => a.Title.localeCompare(b.Title));
+      let currentIndex = 0;
 
-        function checkPassword() {
-            if (document.getElementById('pw-input').value === "12345") {
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('content').style.display = 'flex';
-                fetchVideos();
-            } else { alert("비밀번호 틀림"); }
+      // 2. 플레이어 초기화
+      const player = new BunnyPlayer('#player', {
+        video: videos[currentIndex].Url, // HLS 링크
+        autoplay: true,
+        muted: false,
+        loop: false,
+        width: '100%',
+        height: '100%',
+        fullscreen: true
+      });
+
+      // 3. 비디오 끝나면 다음 비디오 재생
+      player.on('ended', () => {
+        currentIndex++;
+        if (currentIndex < videos.length) {
+          player.load(videos[currentIndex].Url);
+          player.play();
         }
+      });
+    })
+    .catch(err => console.error('스트림 라이브러리를 가져오는데 실패했습니다:', err));
+</script>
 
-        async function fetchVideos() {
-            // 직접 호출 시 CORS 에러를 피하기 위한 우회(Proxy) 주소입니다.
-            const targetUrl = `https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100`;
-            const proxyUrl = `https://api.allorigins.win{encodeURIComponent(targetUrl)}`;
-
-            try {
-                // 이 방식은 헤더(AccessKey)를 직접 보내지 않고 URL 뒤에 붙이거나 
-                // 프록시 서버 설정을 활용해야 할 수 있습니다. 
-                // 버니넷은 보안이 강력하므로 아래와 같이 '직접 Fetch' 설정을 보강합니다.
-                
-                const response = await fetch(targetUrl, {
-                    method: 'GET',
-                    headers: {
-                        'AccessKey': API_KEY,
-                        'accept': 'application/json'
-                    }
-                });
-
-                if (!response.ok) throw new Error("API 인증 실패 (401/403)");
-
-                const data = await response.json();
-                
-                if (data && data.items) {
-                    // 이름순 정렬
-                    videoList = data.items.sort((a, b) => 
-                        a.title.localeCompare(b.title, undefined, {numeric: true})
-                    );
-                    if (videoList.length > 0) playVideo(0);
-                    else infoBar.innerText = "비디오가 없습니다.";
-                }
-            } catch (err) {
-                console.error(err);
-                infoBar.innerText = "❌ 오류: " + err.message + " (CORS 차단 가능성)";
-                // 만약 여기서 실패하면 버니넷 [Security] 메뉴에서 'Allowed Domains'를 완전히 비워야 합니다.
-            }
-        }
-
-        function playVideo(index) {
-            if (index >= videoList.length) {
-                infoBar.innerText = "모든 재생 완료";
-                return;
-            }
-            currentIndex = index;
-            const video = videoList[index];
-            iframe.src = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.guid}?autoplay=true&playsinline=1`;
-            infoBar.innerText = `[${index + 1}/${videoList.length}] ${video.title}`;
-
-            const player = new playerjs.Player(iframe);
-            player.on('ready', () => {
-                player.on('ended', () => playVideo(currentIndex + 1));
-            });
-        }
-    </script>
 </body>
 </html>
