@@ -53,13 +53,14 @@
 <ul id="video-list"></ul>
 
 <script>
+    // Direct mp4 URLs
     const episodes = [
-        {name: "EP01", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP01_EN.mov"},
-        {name: "EP02", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP02_EN.mov"},
-        {name: "EP03", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP03_EN.mov"}
+        {name: "EP01", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP01_EN.mp4"},
+        {name: "EP02", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP02_EN.mp4"},
+        {name: "EP03", url: "https://antiscar-series-en.b-cdn.net/Scar7_051_Sero_EP03_EN.mp4"}
     ];
 
-    // Sort by name
+    // Sort episodes by name
     episodes.sort((a, b) => a.name.localeCompare(b.name));
 
     const playerContainer = document.getElementById('player-container');
